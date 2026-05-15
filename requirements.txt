@@ -1,0 +1,7 @@
+easyocr
+streamlit
+google-genai
+python-dotenv
+pandas
+pillow
+plotly
