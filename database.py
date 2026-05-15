@@ -22,6 +22,7 @@ def init_db():
     cursor.executescript("""
         CREATE TABLE IF NOT EXISTS receipts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_email TEXT NOT NULL DEFAULT 'local_user@example.com',
             filename TEXT NOT NULL,
             upload_date TEXT NOT NULL,
             restaurant_name TEXT DEFAULT '',
@@ -63,11 +64,17 @@ def init_db():
         );
     """)
 
+    # Try to add user_email column for existing databases
+    try:
+        cursor.execute("ALTER TABLE receipts ADD COLUMN user_email TEXT NOT NULL DEFAULT 'local_user@example.com'")
+    except sqlite3.OperationalError:
+        pass # Column already exists
+
     conn.commit()
     conn.close()
 
 
-def save_receipt(filename, upload_date, total_food, gst, grand_total,
+def save_receipt(user_email, filename, upload_date, total_food, gst, grand_total,
                  num_items, num_people, raw_ocr_text, items, splits_data, assignments):
     """
     Save a complete receipt with items and splits to the database.
@@ -79,10 +86,10 @@ def save_receipt(filename, upload_date, total_food, gst, grand_total,
     try:
         # Insert receipt
         cursor.execute("""
-            INSERT INTO receipts (filename, upload_date, total_food, gst, grand_total,
+            INSERT INTO receipts (user_email, filename, upload_date, total_food, gst, grand_total,
                                   num_items, num_people, raw_ocr_text)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (filename, upload_date, total_food, gst, grand_total,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_email, filename, upload_date, total_food, gst, grand_total,
               num_items, num_people, raw_ocr_text))
         receipt_id = cursor.lastrowid
 
@@ -120,23 +127,31 @@ def save_receipt(filename, upload_date, total_food, gst, grand_total,
         conn.close()
 
 
-def get_all_receipts():
-    """Get all receipts ordered by date."""
+def get_all_receipts(user_email):
+    """Get all receipts for the user ordered by date."""
     conn = get_connection()
     rows = conn.execute("""
-        SELECT * FROM receipts ORDER BY upload_date DESC, id DESC
-    """).fetchall()
+        SELECT * FROM receipts 
+        WHERE user_email = ? 
+        ORDER BY upload_date DESC, id DESC
+    """, (user_email,)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def get_receipt_details(receipt_id):
-    """Get a single receipt with its items and splits."""
+def get_receipt_details(receipt_id, user_email):
+    """Get a single receipt with its items and splits (verifying ownership)."""
     conn = get_connection()
 
-    receipt = dict(conn.execute(
-        "SELECT * FROM receipts WHERE id = ?", (receipt_id,)
-    ).fetchone())
+    receipt_row = conn.execute(
+        "SELECT * FROM receipts WHERE id = ? AND user_email = ?", (receipt_id, user_email)
+    ).fetchone()
+    
+    if not receipt_row:
+        conn.close()
+        return None
+
+    receipt = dict(receipt_row)
 
     items = [dict(r) for r in conn.execute(
         "SELECT * FROM receipt_items WHERE receipt_id = ?", (receipt_id,)
@@ -155,55 +170,60 @@ def get_receipt_details(receipt_id):
     return {"receipt": receipt, "items": items, "splits": splits}
 
 
-def get_spending_over_time():
-    """Get daily spending totals."""
+def get_spending_over_time(user_email):
+    """Get daily spending totals for the user."""
     conn = get_connection()
     rows = conn.execute("""
         SELECT upload_date, SUM(grand_total) as total, COUNT(*) as num_receipts
         FROM receipts
+        WHERE user_email = ?
         GROUP BY upload_date
         ORDER BY upload_date
-    """).fetchall()
+    """, (user_email,)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def get_per_person_spending():
-    """Get total spending per person across all receipts."""
+def get_per_person_spending(user_email):
+    """Get total spending per person across all user's receipts."""
     conn = get_connection()
     rows = conn.execute("""
-        SELECT person_name, 
-               SUM(food_amount) as total_food,
-               SUM(gst_amount) as total_gst,
-               SUM(total_amount) as total_spent,
+        SELECT s.person_name, 
+               SUM(s.food_amount) as total_food,
+               SUM(s.gst_amount) as total_gst,
+               SUM(s.total_amount) as total_spent,
                COUNT(*) as num_splits
-        FROM splits
-        GROUP BY person_name
+        FROM splits s
+        JOIN receipts r ON s.receipt_id = r.id
+        WHERE r.user_email = ?
+        GROUP BY s.person_name
         ORDER BY total_spent DESC
-    """).fetchall()
+    """, (user_email,)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def get_top_items(limit=15):
-    """Get most frequently ordered items."""
+def get_top_items(user_email, limit=15):
+    """Get most frequently ordered items for the user."""
     conn = get_connection()
     rows = conn.execute("""
-        SELECT item_name, 
-               SUM(quantity) as total_qty,
-               ROUND(AVG(unit_price), 2) as avg_price,
-               SUM(total_price) as total_spent
-        FROM receipt_items
-        GROUP BY item_name
+        SELECT ri.item_name, 
+               SUM(ri.quantity) as total_qty,
+               ROUND(AVG(ri.unit_price), 2) as avg_price,
+               SUM(ri.total_price) as total_spent
+        FROM receipt_items ri
+        JOIN receipts r ON ri.receipt_id = r.id
+        WHERE r.user_email = ?
+        GROUP BY ri.item_name
         ORDER BY total_qty DESC
         LIMIT ?
-    """, (limit,)).fetchall()
+    """, (user_email, limit)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def get_summary_stats():
-    """Get overall summary statistics."""
+def get_summary_stats(user_email):
+    """Get overall summary statistics for the user."""
     conn = get_connection()
     stats = dict(conn.execute("""
         SELECT 
@@ -215,21 +235,25 @@ def get_summary_stats():
             COALESCE(SUM(gst), 0) as total_gst,
             COALESCE(SUM(num_items), 0) as total_items
         FROM receipts
-    """).fetchone())
+        WHERE user_email = ?
+    """, (user_email,)).fetchone())
 
-    people_count = conn.execute(
-        "SELECT COUNT(DISTINCT person_name) as count FROM splits"
-    ).fetchone()
+    people_count = conn.execute("""
+        SELECT COUNT(DISTINCT s.person_name) as count 
+        FROM splits s
+        JOIN receipts r ON s.receipt_id = r.id
+        WHERE r.user_email = ?
+    """, (user_email,)).fetchone()
     stats["unique_people"] = people_count["count"] if people_count else 0
 
     conn.close()
     return stats
 
 
-def delete_receipt(receipt_id):
-    """Delete a receipt and all related data (cascades)."""
+def delete_receipt(receipt_id, user_email):
+    """Delete a receipt and all related data (cascades), verifying ownership."""
     conn = get_connection()
-    conn.execute("DELETE FROM receipts WHERE id = ?", (receipt_id,))
+    conn.execute("DELETE FROM receipts WHERE id = ? AND user_email = ?", (receipt_id, user_email))
     conn.commit()
     conn.close()
 

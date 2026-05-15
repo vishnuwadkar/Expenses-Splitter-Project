@@ -10,9 +10,9 @@ from database import (
 )
 
 
-def create_spending_trend_chart():
+def create_spending_trend_chart(user_email):
     """Line chart of spending over time."""
-    data = get_spending_over_time()
+    data = get_spending_over_time(user_email)
     if not data:
         return None
 
@@ -25,10 +25,10 @@ def create_spending_trend_chart():
         y=df["total"],
         mode="lines+markers",
         name="Total Spent",
-        line=dict(color="#818cf8", width=3),
-        marker=dict(size=8, color="#a78bfa"),
+        line=dict(color="#7C3AED", width=3),
+        marker=dict(size=8, color="#A78BFA"),
         fill="tozeroy",
-        fillcolor="rgba(129, 140, 248, 0.1)"
+        fillcolor="rgba(124, 58, 237, 0.1)"
     ))
 
     fig.update_layout(
@@ -38,7 +38,7 @@ def create_spending_trend_chart():
         template="plotly_dark",
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Inter", color="#94a3b8"),
+        font=dict(family="Plus Jakarta Sans", color="#94a3b8"),
         height=300,
         margin=dict(l=40, r=20, t=20, b=40),
         yaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
@@ -47,9 +47,9 @@ def create_spending_trend_chart():
     return fig
 
 
-def create_person_spending_chart():
+def create_person_spending_chart(user_email):
     """Horizontal bar chart of per-person spending."""
-    data = get_per_person_spending()
+    data = get_per_person_spending(user_email)
     if not data:
         return None
 
@@ -61,14 +61,14 @@ def create_person_spending_chart():
         x=df["total_food"],
         name="Food",
         orientation="h",
-        marker_color="#818cf8"
+        marker_color="#7C3AED"
     ))
     fig.add_trace(go.Bar(
         y=df["person_name"],
         x=df["total_gst"],
         name="GST",
         orientation="h",
-        marker_color="#fbbf24"
+        marker_color="#F59E0B"
     ))
 
     fig.update_layout(
@@ -79,7 +79,7 @@ def create_person_spending_chart():
         template="plotly_dark",
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Inter", color="#94a3b8"),
+        font=dict(family="Plus Jakarta Sans", color="#94a3b8"),
         height=max(200, len(data) * 50 + 80),
         margin=dict(l=20, r=20, t=20, b=40),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
@@ -89,9 +89,9 @@ def create_person_spending_chart():
     return fig
 
 
-def create_top_items_chart():
+def create_top_items_chart(user_email):
     """Bar chart of most ordered items."""
-    data = get_top_items(10)
+    data = get_top_items(user_email, 10)
     if not data:
         return None
 
@@ -105,7 +105,7 @@ def create_top_items_chart():
         orientation="h",
         marker=dict(
             color=df["total_qty"],
-            colorscale=[[0, "#667eea"], [1, "#a78bfa"]],
+            colorscale=[[0, "#7C3AED"], [1, "#06B6D4"]],
         ),
         text=df["total_qty"],
         textposition="auto",
@@ -119,7 +119,7 @@ def create_top_items_chart():
         template="plotly_dark",
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Inter", color="#94a3b8"),
+        font=dict(family="Plus Jakarta Sans", color="#94a3b8"),
         height=max(250, len(data) * 35 + 80),
         margin=dict(l=20, r=20, t=20, b=40),
         xaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
@@ -128,9 +128,9 @@ def create_top_items_chart():
     return fig
 
 
-def create_spending_breakdown_pie():
+def create_spending_breakdown_pie(user_email):
     """Pie chart of food vs GST breakdown."""
-    stats = get_summary_stats()
+    stats = get_summary_stats(user_email)
     if stats["total_receipts"] == 0:
         return None
 
@@ -141,7 +141,7 @@ def create_spending_breakdown_pie():
         labels=["Food & Drinks", "GST / Tax"],
         values=[food, gst],
         hole=0.55,
-        marker=dict(colors=["#818cf8", "#fbbf24"]),
+        marker=dict(colors=["#7C3AED", "#F59E0B"]),
         textinfo="label+percent",
         textfont=dict(size=12, color="white"),
         hovertemplate="<b>%{label}</b><br>₹%{value:.2f}<br>%{percent}<extra></extra>"
@@ -152,7 +152,7 @@ def create_spending_breakdown_pie():
         template="plotly_dark",
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Inter", color="#94a3b8"),
+        font=dict(family="Plus Jakarta Sans", color="#94a3b8"),
         height=280,
         margin=dict(l=20, r=20, t=20, b=20),
         showlegend=False,
@@ -166,9 +166,9 @@ def create_spending_breakdown_pie():
     return fig
 
 
-def create_bill_distribution_chart():
+def create_bill_distribution_chart(user_email):
     """Histogram of bill amounts."""
-    receipts = get_all_receipts()
+    receipts = get_all_receipts(user_email)
     if not receipts:
         return None
 
@@ -178,7 +178,7 @@ def create_bill_distribution_chart():
     fig.add_trace(go.Histogram(
         x=df["grand_total"],
         nbinsx=15,
-        marker_color="#818cf8",
+        marker_color="#7C3AED",
         opacity=0.8
     ))
 
@@ -189,7 +189,7 @@ def create_bill_distribution_chart():
         template="plotly_dark",
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Inter", color="#94a3b8"),
+        font=dict(family="Plus Jakarta Sans", color="#94a3b8"),
         height=250,
         margin=dict(l=40, r=20, t=20, b=40),
         xaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
