@@ -1,4 +1,3 @@
-easyocr
 streamlit
 google-genai
 python-dotenv

@@ -9,16 +9,18 @@ load_dotenv()
 # Initialize client with your API key
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-def parse_receipt_with_gemini(raw_text: str) -> dict:
+from PIL import Image
+
+def parse_receipt_with_gemini(image: Image.Image) -> dict:
     """
-    Sends raw OCR text to Gemini.
+    Sends receipt image directly to Gemini Vision.
     Returns a dict with 'items' (list) and 'gst' (float).
     """
 
     prompt = f"""You are a receipt parsing assistant.
 
-Below is raw text extracted from a receipt using OCR.
-The text may have errors, inconsistent formatting, or noise.
+Below is an image of a receipt.
+The image may have errors, inconsistent formatting, or noise.
 
 Your job:
 1. Extract all food/drink line items with their quantity and total price
@@ -37,14 +39,11 @@ Format:
   "gst": 00.00
 }}
 
-If no tax/GST is found, set "gst" to 0.
-
-Raw receipt text:
-{raw_text}"""
+If no tax/GST is found, set "gst" to 0."""
 
     response = client.models.generate_content(
         model="gemini-2.5-flash",
-        contents=prompt
+        contents=[image, prompt]
     )
 
     raw_response = response.text.strip()

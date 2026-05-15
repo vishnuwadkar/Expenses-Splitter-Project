@@ -2,7 +2,7 @@ import streamlit as st
 import os
 import json
 from datetime import datetime
-from ocr import extract_text_from_image
+from PIL import Image
 from parser import parse_receipt_with_gemini
 from splitter import calculate_splits
 from database import save_receipt, get_all_receipts, get_receipt_details, delete_receipt, get_summary_stats
@@ -375,13 +375,12 @@ with tab_split:
         # ── Process (cached) ─────────────────────────────
         if st.session_state.get("file_key") != file_key:
             with st.status("🔍 Analyzing receipt...", expanded=True) as status:
-                st.write("Running OCR...")
-                raw_text = extract_text_from_image(uploaded_file)
-                st.session_state["raw_text"] = raw_text
-
-                st.write("AI extracting items, quantities & GST...")
+                st.write("AI parsing items, quantities & GST directly from image...")
+                
+                image = Image.open(uploaded_file).convert('RGB')
+                
                 try:
-                    parsed = parse_receipt_with_gemini(raw_text)
+                    parsed = parse_receipt_with_gemini(image)
                 except Exception as e:
                     st.error(f"Parsing failed: {e}")
                     st.stop()
@@ -393,7 +392,6 @@ with tab_split:
                 st.session_state.pop("saved", None)
                 status.update(label=f"✅ Found {len(parsed['items'])} items · GST: ₹{parsed['gst']}", state="complete")
 
-        raw_text = st.session_state["raw_text"]
         items = st.session_state["items"]
         gst = st.session_state["gst"]
 
@@ -406,9 +404,6 @@ with tab_split:
             st.markdown('<div class="receipt-img-card">', unsafe_allow_html=True)
             st.image(uploaded_file, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
-
-            with st.expander("🔧 Raw OCR", expanded=False):
-                st.code(raw_text, language=None)
 
             st.markdown('<div class="section-label">Detected Items</div>', unsafe_allow_html=True)
             total_food = sum(item["price"] for item in items)
