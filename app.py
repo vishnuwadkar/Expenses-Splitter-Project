@@ -31,6 +31,12 @@ st.set_page_config(
 user_email = "local_user@example.com"
 authenticator = None
 
+if HAS_AUTH:
+    # If deployed on Streamlit Cloud, write the credentials file from secrets
+    if not os.path.exists('google_credentials.json') and "google_credentials" in st.secrets:
+        with open('google_credentials.json', 'w') as f:
+            f.write(st.secrets["google_credentials"]["json_string"])
+
 if HAS_AUTH and os.path.exists('google_credentials.json'):
     authenticator = Authenticate(
         secret_credentials_path='google_credentials.json',
