@@ -345,7 +345,7 @@ st.markdown("""
 # ── Hero ─────────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
-    <div class="hero-title">💸 SplitWise AI</div>
+    <div class="hero-title">SplitWise AI</div>
     <div class="hero-sub">Upload receipts · AI extracts items & GST · Split bills · Track spending</div>
 </div>
 """, unsafe_allow_html=True)
