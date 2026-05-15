@@ -2,9 +2,12 @@ import easyocr
 from PIL import Image
 import numpy as np
 
-# This loads the EasyOCR model — happens once when app starts
-# First time it runs, it downloads the model (~100MB) automatically
-reader = easyocr.Reader(['en'], gpu=False)
+import streamlit as st
+
+# Cache the model so it only loads once, and only when actually needed.
+@st.cache_resource(show_spinner=False)
+def get_ocr_reader():
+    return easyocr.Reader(['en'], gpu=False)
 
 def extract_text_from_image(image_file):
     """
@@ -16,6 +19,9 @@ def extract_text_from_image(image_file):
     
     # EasyOCR needs a numpy array
     image_np = np.array(image)
+    
+    # Load reader here (first time it runs, it downloads the model)
+    reader = get_ocr_reader()
     
     # Returns list of [bounding_box, text, confidence_score]
     results = reader.readtext(image_np)
