@@ -1,6 +1,6 @@
 <div align="center">
 
-# 💸 SplitWise AI
+# SplitWise AI
 
 **An AI-powered web application that digitizes receipts, intelligently parses line items, and calculates proportional bill splits with granular tax distribution.**
 
