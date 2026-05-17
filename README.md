@@ -17,14 +17,11 @@
 
 SplitWise AI eliminates the headache of manually splitting restaurant bills. Simply upload a photo of your receipt, and the app uses Computer Vision (EasyOCR) and Large Language Models (Google Gemini) to extract items, prices, and quantities. It then allows you to assign specific items to individuals and calculates the exact amount owed, including a **proportional distribution of GST/taxes** based on individual consumption.
 
-The app features a multi-tenant architecture with Google OAuth, allowing users to save their split history and view personal financial analytics in a beautifully designed, glassmorphism-inspired UI.
-
 ##  Features
 
 - **📸 AI Receipt Parsing:** Extracts messy unstructured text from receipt images and structures it into JSON.
 - **🧮 Proportional Splitting:** Stop splitting taxes evenly. The app calculates exactly how much tax each person owes based on their specific food orders.
 - **📊 Data Analytics Dashboard:** Interactive Plotly charts showing spending trends, per-person expenditure, and top ordered items.
-- **🔐 Secure Multi-Tenancy:** Google OAuth 2.0 ensures that your receipt history and analytics are private to your account.
 - **🎨 Premium UI/UX:** Custom CSS injections provide a modern, responsive 3-column layout with bespoke typography (Outfit & Plus Jakarta Sans).
 
 ##  Tech Stack
@@ -33,7 +30,6 @@ The app features a multi-tenant architecture with Google OAuth, allowing users t
 - **Backend:** Python
 - **AI / Computer Vision:** EasyOCR (PyTorch), Google Gemini 1.5 Pro API
 - **Database:** SQLite
-- **Authentication:** `streamlit-google-auth` (OAuth 2.0)
 
 ##  Installation & Local Setup
 
