@@ -545,7 +545,7 @@ with tab_split:
                                 grand_total=grand,
                                 num_items=len(items),
                                 num_people=len(people),
-                                raw_ocr_text=raw_text,
+                                raw_ocr_text="",
                                 items=items,
                                 splits_data=totals,
                                 assignments=cur_assignments
