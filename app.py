@@ -339,6 +339,90 @@ st.markdown("""
         letter-spacing: 0.1em; color: #94A3B8; margin-bottom: 12px;
         padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06);
     }
+
+    /* ── Number Input: ensure +/- step buttons are visible ── */
+    [data-testid="stNumberInput"] button {
+        background: #1E2130 !important;
+        border: 1px solid #334155 !important;
+        color: #A78BFA !important;
+        border-radius: 6px !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+    [data-testid="stNumberInput"] button:hover {
+        background: rgba(124, 58, 237, 0.2) !important;
+        border-color: #7C3AED !important;
+        color: #ffffff !important;
+        filter: none !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    [data-testid="stNumberInput"] button svg {
+        fill: currentColor !important;
+        stroke: currentColor !important;
+    }
+
+    /* ═══ RESPONSIVE: Mobile ═══ */
+    @media (max-width: 768px) {
+        .block-container {
+            padding: 0.5rem 0.8rem !important;
+            max-width: 100% !important;
+        }
+        .hero { padding: 0.8rem 1rem; border-radius: 10px; margin-bottom: 0.8rem; }
+        .hero-title { font-size: 1.3rem; }
+        .hero-sub { font-size: 0.7rem; }
+
+        .stTabs [data-baseweb="tab"] {
+            padding: 10px 12px !important;
+            font-size: 0.75rem !important;
+        }
+
+        /* Stack columns vertically */
+        [data-testid="stHorizontalBlock"] {
+            flex-direction: column !important;
+        }
+        [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+            width: 100% !important;
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+            border-right: none !important;
+            padding-right: 0 !important;
+            padding-left: 0 !important;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 16px !important;
+            margin-bottom: 16px !important;
+        }
+        [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child {
+            border-bottom: none;
+            margin-bottom: 0 !important;
+        }
+
+        .result-card { padding: 14px; }
+        .result-total { font-size: 24px; }
+        .grand-amount { font-size: 22px; }
+        .stat-card { padding: 14px; }
+        .stat-value { font-size: 1.4rem; }
+        .history-card { padding: 10px 14px; }
+        .history-stats { flex-wrap: wrap; gap: 6px; }
+        .history-header { flex-direction: column; align-items: flex-start; gap: 4px; }
+        .item-row { padding: 8px 10px; font-size: 0.78rem; }
+        .assign-card { padding: 10px 12px; }
+        .stButton > button { padding: 12px 1rem !important; font-size: 14px !important; }
+        .total-pill { padding: 12px; }
+        .total-pill-amount { font-size: 18px; }
+    }
+
+    /* ═══ RESPONSIVE: Tablet ═══ */
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .block-container { max-width: 100% !important; padding: 1rem !important; }
+        .hero-title { font-size: 1.5rem; }
+        .result-total { font-size: 28px; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -440,9 +524,10 @@ with tab_split:
             num_people = st.number_input("Count", min_value=2, max_value=10, value=2, label_visibility="collapsed")
 
             people = []
-            pcols = st.columns(min(int(num_people), 5))
+            # 2-column grid so names don't get cramped with 3+ people
+            p_col1, p_col2 = st.columns(2)
             for i in range(int(num_people)):
-                with pcols[i % len(pcols)]:
+                with p_col1 if i % 2 == 0 else p_col2:
                     name = st.text_input(f"P{i+1}", value=f"Person {i+1}", key=f"person_{i}",
                                          label_visibility="collapsed", placeholder=f"Name {i+1}")
                     people.append(name)
@@ -473,18 +558,22 @@ with tab_split:
                         assignments[assignee].append({"item": item["item"], "price": item["price"]})
                 else:
                     st.caption(f"₹{unit_price}/each — assign units per person")
-                    acols = st.columns(len(people))
+                    # Cap at 3 columns per row for readability
+                    cols_per_row = min(len(people), 3)
                     assigned_so_far = 0
-                    for pidx, person in enumerate(people):
-                        with acols[pidx]:
-                            count = st.number_input(person, min_value=0, max_value=qty,
-                                                    value=0, key=f"item_{idx}_p{pidx}")
-                            if count > 0:
-                                assignments[person].append({
-                                    "item": f"{item['item']} ×{count}",
-                                    "price": round(unit_price * count, 2)
-                                })
-                            assigned_so_far += count
+                    for row_start in range(0, len(people), cols_per_row):
+                        row_people = list(enumerate(people))[row_start:row_start + cols_per_row]
+                        acols = st.columns(len(row_people))
+                        for col_idx, (pidx, person) in enumerate(row_people):
+                            with acols[col_idx]:
+                                count = st.number_input(person, min_value=0, max_value=qty,
+                                                        value=0, key=f"item_{idx}_p{pidx}")
+                                if count > 0:
+                                    assignments[person].append({
+                                        "item": f"{item['item']} ×{count}",
+                                        "price": round(unit_price * count, 2)
+                                    })
+                                assigned_so_far += count
 
                     remaining = qty - assigned_so_far
                     if remaining > 0:
