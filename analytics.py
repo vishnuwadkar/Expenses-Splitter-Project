@@ -32,7 +32,6 @@ def create_spending_trend_chart(user_email):
     ))
 
     fig.update_layout(
-        title=None,
         xaxis_title=None,
         yaxis_title="Amount (₹)",
         template="plotly_dark",
@@ -73,7 +72,6 @@ def create_person_spending_chart(user_email):
 
     fig.update_layout(
         barmode="stack",
-        title=None,
         xaxis_title="Total Spent (₹)",
         yaxis_title=None,
         template="plotly_dark",
@@ -113,7 +111,6 @@ def create_top_items_chart(user_email):
     ))
 
     fig.update_layout(
-        title=None,
         xaxis_title="Times Ordered",
         yaxis_title=None,
         template="plotly_dark",
@@ -148,7 +145,6 @@ def create_spending_breakdown_pie(user_email):
     )])
 
     fig.update_layout(
-        title=None,
         template="plotly_dark",
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
@@ -183,7 +179,6 @@ def create_bill_distribution_chart(user_email):
     ))
 
     fig.update_layout(
-        title=None,
         xaxis_title="Bill Amount (₹)",
         yaxis_title="Frequency",
         template="plotly_dark",
